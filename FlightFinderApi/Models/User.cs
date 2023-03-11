@@ -1,10 +1,20 @@
-﻿namespace FlightFinderApi.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
+namespace FlightFinderApi.Models
 {
     public class User
     {
-      public int Id { get; set; }
-      public string UserName { get; set; }
-      public string Password { get; set; }    
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+        public string UserName { get; set; }
+        [JsonIgnore]
+        public byte[] PassHash { get; set; }
+        [JsonIgnore]
+        public byte[] PassSalt { get; set; }
+
     }
     public class Jwt
     {

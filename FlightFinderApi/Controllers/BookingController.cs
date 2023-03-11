@@ -1,7 +1,6 @@
 ﻿using FlightFinderApi.Services.Interfaces;
 using FlightFinderApi.ViewModels;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FlightFinderApi.Controllers
