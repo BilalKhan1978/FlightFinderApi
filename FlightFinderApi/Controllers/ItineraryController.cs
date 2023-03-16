@@ -8,7 +8,7 @@ namespace FlightFinderApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class ItineraryController : ControllerBase
     {
         private readonly IItineraryService _tineraryService;

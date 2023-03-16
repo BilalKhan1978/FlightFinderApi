@@ -5,38 +5,54 @@ using FlightFinderApi.Services.Interfaces;
 using FlightFinderApi.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace FlightFinderApi.Services.Implementations
 {
     public class BookingService : IBookingService
     {
       private readonly FlightFinderDbContext _dbContext;
       IMapper _mapper;
+     
         public BookingService(FlightFinderDbContext dbContext, IMapper mapper)
         {
             _dbContext = dbContext;
             _mapper = mapper;
         }
-        public async Task AddBooking(AddBookingRequestDto addBookingRequestDto)
-        {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == addBookingRequestDto.UserId);
-            if (user == null) throw new Exception("No user found against this user-Id");
 
-            var flight = await _dbContext.Itineraries.FirstOrDefaultAsync(x => x.Flight_Id == addBookingRequestDto.Flight_Id);
-                if (flight == null) throw new Exception("No flight Info found against this flight-Id");
-            if (flight.AvailableSeats < (addBookingRequestDto.TotalAdultSeats + addBookingRequestDto.TotalChildSeats)) 
-                throw new Exception("Desired no. of seats are not available");
-            flight.AvailableSeats = flight.AvailableSeats - (addBookingRequestDto.TotalChildSeats + addBookingRequestDto.TotalAdultSeats);
-            
-            Booking booking = new Booking()
+        public async Task AddBooking(List<AddBookingRequestDto> addBookingRequestDto)
+        {
+            var randomNumber = GetRandomAlphaNumeric();
+            List<Booking> bookingList = new List<Booking>();
+            foreach (var item in addBookingRequestDto)
             {
-                Users = user,
-                Itineraries = flight,
-                TotalAdultSeats = addBookingRequestDto.TotalAdultSeats,
-                TotalChildSeats = addBookingRequestDto.TotalChildSeats
-            };
-                  _dbContext.Update(flight);
-            await _dbContext.AddAsync(booking);
+                var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == item.UserId);
+                if (user == null) throw new Exception("No user found against this user-Id");
+
+                var flight = await _dbContext.Itineraries.FirstOrDefaultAsync(x => x.Flight_Id == item.Flight_Id);
+                if (flight == null) throw new Exception("No flight Info found against this flight-Id");
+                if (flight.AvailableSeats < (item.TotalAdultSeats + item.TotalChildSeats))
+                    throw new Exception("Desired no. of seats are not available");
+                flight.AvailableSeats = flight.AvailableSeats - (item.TotalChildSeats + item.TotalAdultSeats);
+
+                bookingList.Add(new Booking()
+                {
+                    Users = user,
+                    Itineraries = flight,
+                    TotalAdultSeats = item.TotalAdultSeats,
+                    TotalChildSeats = item.TotalChildSeats,
+                    BookingReference = randomNumber
+                });
+                _dbContext.Update(flight);
+            }
+            await _dbContext.AddRangeAsync(bookingList);
             await _dbContext.SaveChangesAsync();
+        }
+
+        public static string GetRandomAlphaNumeric()
+        {
+            var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+            Random random = new Random();
+            return new string(chars.Select(c => chars[random.Next(chars.Length)]).Take(6).ToArray());
         }
 
         public async Task<List<GetBookingRequestDto>> GetBookingByUserName(string userName)
@@ -52,7 +68,8 @@ namespace FlightFinderApi.Services.Implementations
                 var root = await GetRoot(booking.Itineraries);
                 getBookingRequestDto.Add(new GetBookingRequestDto()
                 {
-                  DepartureDestination = root.DepartureDestination,
+                    BookingReference = booking.BookingReference,
+                    DepartureDestination = root.DepartureDestination,
                     ArrivalDestination = root.ArrivalDestination,
                     TotalAdultSeats = booking.TotalAdultSeats,
                     TotalChildSeats = booking.TotalChildSeats,
@@ -70,6 +87,24 @@ namespace FlightFinderApi.Services.Implementations
         {
             return await _dbContext.Roots.Include(x => x.Itineraries).FirstOrDefaultAsync(x => x.Itineraries.Contains(flight));
               //  _dbContext.Itineraries.Include(x => x.Root).FirstOrDefaultAsync(x => x.Flight_Id == flight_id);
+        }
+
+        public async Task DeleteBooking(string bookingReference)
+        {
+            var booking = await _dbContext.Bookings.Include(x => x.Itineraries).Where(x => x.BookingReference == bookingReference).ToListAsync();
+            if (booking.Count < 1) throw new Exception("No such booking available against this booking reference");
+            _dbContext.RemoveRange(booking);
+           
+            foreach(var item in booking)
+            {
+                var flight = await _dbContext.Itineraries.FirstOrDefaultAsync(x => x.Flight_Id == item.Itineraries.Flight_Id);
+                if (flight != null)
+                {
+                    flight.AvailableSeats += item.TotalAdultSeats + item.TotalChildSeats;
+                    _dbContext.Itineraries.Update(flight);
+                }
+            }
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

@@ -8,8 +8,8 @@ namespace FlightFinderApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
-    public class RootController : ControllerBase
+   // [Authorize]
+    public class RootController : Controller
     {
         // Inject the service
         private readonly IRootService _rootService;
@@ -40,6 +40,22 @@ namespace FlightFinderApi.Controllers
             {
                 var roots = await _rootService.SearchRoots(searchRootRequestDto);
                 if (roots!=null && roots.Count > 0) return Ok(roots);
+                return NotFound("We are not offering any flight for this root");
+            }
+            catch (Exception e)
+            {
+                if (e.Message.Contains("No flight found")) return NotFound(e.Message);
+                throw new Exception(e.Message);
+            }
+        }
+
+        [HttpPost("searchConnectedRoots")]
+        public async Task<IActionResult> SearchRootsConnectedRoots([FromBody] SearchRootRequestDto searchRootRequestDto)
+        {
+            try
+            {
+                var roots = await _rootService.SearchConnectedRoots(searchRootRequestDto);
+                if (roots != null && roots.Count > 0) return Ok(roots);
                 return NotFound("We are not offering any flight for this root");
             }
             catch (Exception e)

@@ -7,6 +7,7 @@
         public string ArrivalDestination { get; set; }
         public int TotalAdultSeats { get; set; }
         public int TotalChildSeats { get; set; }
+        public string BookingReference { get; set; }
         public string Flight_Id { get; set; }
         public DateTime DepartureAt { get; set; }
         public DateTime ArrivalAt { get; set; }

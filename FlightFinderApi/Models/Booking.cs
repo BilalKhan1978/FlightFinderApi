@@ -7,5 +7,6 @@
       public Itinerary Itineraries { get; set; }
       public int TotalAdultSeats { get; set; }
       public int TotalChildSeats { get; set; }
+      public string BookingReference { get; set; }
     }
 }

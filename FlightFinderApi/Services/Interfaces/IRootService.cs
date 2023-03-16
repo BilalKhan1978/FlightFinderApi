@@ -9,7 +9,7 @@ namespace FlightFinderApi.Services.Interfaces
     {
       //Task AddRoots(List<Root> addRootsRequestDto);
       Task<List<GetRootsRequestDto>> SearchRoots(SearchRootRequestDto searchRootRequestDto);
-       
+        Task<List<GetConnectedFlightRequestDto>> SearchConnectedRoots(SearchRootRequestDto searchRootRequestDto);
 
     }
 }
